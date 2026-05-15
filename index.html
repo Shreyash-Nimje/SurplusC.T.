@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SURPLUS — Har Daane Ka Hisaab</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Syne:wght@400;500;600;700;800&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      /* Sophisticated Blue Palette */
+      --bg: #030a16;        
+      --bg2: #081222;       
+      --surface: #0c182e;   
+      --green: #b0e0e6;     /* Powder Blue */
+      --green-dim: #79a3b1; 
+      --green-subtle: rgba(176, 224, 230, 0.07);
+      --saffron: #ffffff;   
+      --white: #ffffff;     
+      --muted: #728ab3;     
+      --text: #d8e3f2;      
+      --border: rgba(176, 224, 230, 0.15);
+      
+      --font-display: 'Bebas Neue', sans-serif;
+      --font-body: 'Syne', sans-serif;
+      --font-mono: 'DM Mono', monospace;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-body);
+      overflow-x: hidden;
+      cursor: none;
+    }
+
+    /* CURSOR */
+    .cursor {
+      position: fixed; width: 10px; height: 10px;
+      background: var(--green); border-radius: 50%;
+      pointer-events: none; z-index: 9999;
+      transform: translate(-50%,-50%);
+      mix-blend-mode: screen;
+      box-shadow: 0 0 10px rgba(176, 224, 230, 0.8);
+    }
+    .cursor-ring {
+      position: fixed; width: 38px; height: 38px;
+      border: 1px solid rgba(176, 224, 230, 0.45); border-radius: 50%;
+      pointer-events: none; z-index: 9998;
+      transform: translate(-50%,-50%);
+      transition: width 0.3s, height 0.3s, border-color 0.3s;
+    }
+    body:has(a:hover) .cursor-ring,
+    body:has(button:hover) .cursor-ring,
+    body:has(input:hover) .cursor-ring { width: 56px; height: 56px; border-color: var(--green); }
+
+    /* LOADER */
+    #loader {
+      position: fixed; inset: 0; background: var(--bg);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      z-index: 9000; transition: opacity 0.9s, visibility 0.9s;
+    }
+    #loader.hidden { opacity: 0; visibility: hidden; }
+    .loader-top {
+      font-family: var(--font-mono); font-size: 0.65rem;
+      letter-spacing: 0.4em; color: var(--green); text-transform: uppercase;
+      opacity: 0; animation: fadeIn 0.5s ease 0.3s forwards; margin-bottom: 1.5rem;
+    }
+    .loader-word {
+      font-family: var(--font-display);
+      font-size: clamp(4rem, 14vw, 10rem);
+      letter-spacing: 0.12em; color: var(--white);
+      overflow: hidden; line-height: 1;
+      text-shadow: 0 0 20px rgba(176, 224, 230, 0.2);
+    }
+    .loader-word span {
+      display: inline-block; transform: translateY(110%);
+      animation: slideUp 0.6s cubic-bezier(0.16,1,0.3,1) forwards;
+    }
+    .loader-word span:nth-child(1){animation-delay:0.4s}
+    .loader-word span:nth-child(2){animation-delay:0.47s}
+    .loader-word span:nth-child(3){animation-delay:0.54s}
+    .loader-word span:nth-child(4){animation-delay:0.61s}
+    .loader-word span:nth-child(5){animation-delay:0.68s}
+    .loader-word span:nth-child(6){animation-delay:0.75s}
+    .loader-word span:nth-child(7){animation-delay:0.82s}
+    .loader-hindi {
+      font-family: var(--font-body); font-size: 1rem;
+      color: var(--muted); margin-top: 1.2rem; letter-spacing: 0.08em;
+      opacity: 0; animation: fadeIn 0.6s ease 1.4s forwards;
+    }
+    .loader-bar {
+      width: 0; height: 1px; background: var(--green); margin-top: 2rem;
+      animation: barGrow 1.2s cubic-bezier(0.4,0,0.2,1) 1s forwards;
+    }
+    @keyframes slideUp { to { transform: translateY(0); } }
+    @keyframes fadeIn  { to { opacity: 1; } }
+    @keyframes barGrow { to { width: 220px; } }
+
+    /* NAV */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      padding: 1.4rem 4rem;
+      display: flex; align-items: center; justify-content: space-between;
+      transition: background 0.4s, border-color 0.4s, backdrop-filter 0.4s;
+    }
+    nav.scrolled {
+      background: rgba(3, 10, 22, 0.92);
+      border-bottom: 1px solid var(--border);
+      backdrop-filter: blur(18px);
+    }
+    .nav-logo {
+      font-family: var(--font-display); font-size: 1.5rem;
+      letter-spacing: 0.22em; color: var(--white); text-decoration: none;
+    }
+    .nav-logo .dot { color: var(--green); }
+    .nav-links { display: flex; gap: 2.5rem; list-style: none; }
+    .nav-links a {
+      font-family: var(--font-mono); font-size: 0.68rem;
+      letter-spacing: 0.18em; text-transform: uppercase;
+      color: var(--muted); text-decoration: none; transition: color 0.2s;
+    }
+    .nav-links a:hover { color: var(--green); }
+    .nav-btn {
+      font-family: var(--font-mono); font-size: 0.68rem;
+      letter-spacing: 0.15em; text-transform: uppercase;
+      color: var(--bg); background: var(--green);
+      border: none; padding: 0.6rem 1.5rem; cursor: none;
+      transition: transform 0.2s, box-shadow 0.2s;
+      font-weight: bold; text-decoration: none; display: inline-block;
+    }
+    .nav-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(176, 224, 230, 0.3); }
+
+    /* SHARED */
+    section {
+      min-height: 100vh; position: relative;
+      display: flex; flex-direction: column; justify-content: center;
+    }
+    .container { max-width: 1380px; margin: 0 auto; padding: 0 4rem; width: 100%; }
+    .tag {
+      font-family: var(--font-mono); font-size: 0.62rem;
+      letter-spacing: 0.35em; text-transform: uppercase;
+      color: var(--green); margin-bottom: 2rem;
+      opacity: 0; transform: translateY(16px);
+      transition: opacity 0.6s, transform 0.6s;
+    }
+    .tag.visible { opacity: 1; transform: none; }
+    .reveal {
+      opacity: 0; transform: translateY(38px);
+      transition: opacity 0.85s cubic-bezier(0.16,1,0.3,1), transform 0.85s cubic-bezier(0.16,1,0.3,1);
+    }
+    .reveal.visible { opacity: 1; transform: none; }
+    .d1{transition-delay:0.1s} .d2{transition-delay:0.2s}
+    .d3{transition-delay:0.3s} .d4{transition-delay:0.4s}
+
+    /* 01 HERO */
+    #hero { background: var(--bg); overflow: hidden; }
+    .hero-bg {
+      position: absolute; inset: 0;
+      background:
+        radial-gradient(ellipse 65% 55% at 70% 40%, rgba(176, 224, 230, 0.055) 0%, transparent 70%),
+        radial-gradient(ellipse 35% 40% at 15% 75%, rgba(255, 255, 255, 0.04) 0%, transparent 60%);
+    }
+    .hero-grid {
+      position: absolute; inset: 0;
+      background-image:
+        linear-gradient(rgba(176, 224, 230, 0.028) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(176, 224, 230, 0.028) 1px, transparent 1px);
+      background-size: 72px 72px;
+      mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, black 20%, transparent 100%);
+      animation: gridMove 25s linear infinite;
+    }
+    @keyframes gridMove { 0%{background-position:0 0} 100%{background-position:72px 72px} }
+    .hero-inner {
+      position: relative; z-index: 2;
+      padding-top: 13rem; padding-bottom: 8rem;
+    }
+    .hero-flag-line {
+      font-family: var(--font-mono); font-size: 0.65rem;
+      letter-spacing: 0.35em; text-transform: uppercase;
+      color: var(--green); margin-bottom: 2.2rem;
+      display: flex; align-items: center; gap: 0.8rem;
+      opacity: 0; animation: fadeIn 0.7s ease 1.9s forwards;
+    }
+    .hero-title {
+      font-family: var(--font-display);
+      font-size: clamp(4.5rem, 10.5vw, 13rem);
+      line-height: 0.88; letter-spacing: 0.025em; color: var(--white);
+    }
+    .hero-title .line { overflow: hidden; display: block; }
+    .hero-title .line span {
+      display: block; transform: translateY(110%);
+      animation: slideUp 1s cubic-bezier(0.16,1,0.3,1) forwards;
+    }
+    .hero-title .line:nth-child(1) span { animation-delay: 2s; }
+    .hero-title .line:nth-child(2) span { animation-delay: 2.12s; }
+    .hero-title .line:nth-child(3) span { animation-delay: 2.24s; color: var(--green); }
+    .hero-sub {
+      font-size: clamp(1rem, 1.6vw, 1.25rem);
+      color: var(--muted); max-width: 580px;
+      line-height: 1.9; margin-top: 3rem;
+      opacity: 0; animation: fadeIn 0.9s ease 2.7s forwards;
+    }
+    .hero-sub strong { color: var(--text); font-weight: 600; }
+    .hero-stats {
+      position: absolute; right: 4rem; top: 50%;
+      transform: translateY(-50%);
+      display: flex; flex-direction: column; gap: 1rem;
+      opacity: 0; animation: fadeIn 1s ease 3s forwards; z-index: 2;
+    }
+    .hstat {
+      border: 1px solid var(--border);
+      background: rgba(12, 24, 46, 0.85);
+      backdrop-filter: blur(12px);
+      padding: 1.1rem 1.6rem;
+      display: flex; align-items: center; gap: 1.2rem;
+    }
+    .hstat-num {
+      font-family: var(--font-display); font-size: 2.2rem;
+      color: var(--green); line-height: 1;
+    }
+    .hstat-label {
+      font-family: var(--font-mono); font-size: 0.58rem;
+      letter-spacing: 0.2em; color: var(--muted);
+      text-transform: uppercase; display: block;
+    }
+    .hstat-note { font-size: 0.78rem; color: var(--text); display: block; margin-top: 0.2rem; }
+    .scroll-hint {
+      position: absolute; bottom: 3rem; left: 50%;
+      transform: translateX(-50%);
+      display: flex; flex-direction: column; align-items: center; gap: 0.7rem;
+      opacity: 0; animation: fadeIn 0.8s ease 3.2s forwards; z-index: 2;
+    }
+    .scroll-hint span {
+      font-family: var(--font-mono); font-size: 0.58rem;
+      letter-spacing: 0.3em; color: var(--muted); text-transform: uppercase;
+    }
+    .scroll-bar {
+      width: 1px; height: 55px;
+      background: linear-gradient(to bottom, var(--green), transparent);
+      animation: pulse 2.2s ease-in-out infinite;
+    }
+    @keyframes pulse { 0%,100%{opacity:0.3} 50%{opacity:1} }
+
+    /* 02 PROBLEM & SHARED SECTIONS */
+    #problem, #how { background: var(--bg2); border-top: 1px solid var(--border); padding: 8rem 0; }
+    .problem-layout, .how-top { display: grid; grid-template-columns: 1fr 1fr; gap: 6rem; align-items: center; padding: 4rem 0; }
+    .giant-stat { font-family: var(--font-display); font-size: clamp(5rem, 13vw, 15rem); line-height: 0.82; letter-spacing: -0.01em; }
+    .gs-accent { color: var(--green); }
+    .gs-ghost { -webkit-text-stroke: 1px var(--muted); -webkit-text-fill-color: transparent; }
+    .gs-solid { color: var(--white); }
+    .stat-note { font-size: 1rem; color: var(--muted); line-height: 1.85; max-width: 420px; margin-top: 2rem; }
+    .stat-note strong { color: var(--green); font-weight: 600; }
+    .problem-cards { display: flex; flex-direction: column; gap: 1.5rem; }
+    .pcard { border: 1px solid var(--border); background: var(--surface); padding: 2rem 2.2rem; position: relative; overflow: hidden; transition: border-color 0.3s, transform 0.3s; }
+    .pcard::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--green); transform: scaleY(0); transform-origin: bottom; transition: transform 0.4s cubic-bezier(0.16,1,0.3,1); }
+    .pcard:hover { border-color: rgba(176, 224, 230, 0.3); transform: translateX(6px); }
+    .pcard:hover::before { transform: scaleY(1); }
+    .pcard-id { font-family: var(--font-mono); font-size: 0.58rem; letter-spacing: 0.3em; color: var(--green); margin-bottom: 0.7rem; }
+    .pcard h3 { font-weight: 700; font-size: 1.1rem; color: var(--white); margin-bottom: 0.5rem; }
+    .pcard p { font-size: 0.88rem; color: var(--muted); line-height: 1.75; }
+
+    /* 03 STORY */
+    #story { background: var(--bg); padding: 8rem 0; border-top: 1px solid var(--border); }
+    .story-head { font-family: var(--font-display); font-size: clamp(2.8rem, 6vw, 7.5rem); line-height: 0.93; letter-spacing: 0.025em; color: var(--white); max-width: 860px; margin-bottom: 5rem; }
+    .story-head .hl { color: var(--green); }
+    .story-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 1px; background: var(--border); border: 1px solid var(--border); }
+    .scard { background: var(--bg); padding: 2.8rem 2.2rem; transition: background 0.3s; }
+    .scard:hover { background: var(--surface); }
+    .scard-who { font-family: var(--font-mono); font-size: 0.6rem; letter-spacing: 0.3em; text-transform: uppercase; color: var(--green); margin-bottom: 0.6rem; }
+    .scard h3 { font-weight: 700; font-size: 1.1rem; color: var(--white); margin-bottom: 0.7rem; line-height: 1.4; }
+    .scard p { font-size: 0.86rem; color: var(--muted); line-height: 1.8; }
+
+    /* 04 HOW IT WORKS (Shared with #problem above) */
+    .how-big { font-family: var(--font-display); font-size: clamp(3.5rem, 9vw, 11rem); line-height: 0.88; letter-spacing: 0.025em; color: var(--green); text-shadow: 0 0 70px rgba(176, 224, 230, 0.18); }
+    .how-big .sub-word { color: var(--white); }
+    .how-lede { font-size: 1.05rem; color: var(--text); line-height: 1.9; }
+    .how-lede strong { color: var(--green); }
+    .steps { border-top: 1px solid var(--border); }
+    .step { display: grid; grid-template-columns: 80px 1fr; gap: 2.5rem; padding: 2.8rem 0; border-bottom: 1px solid var(--border); align-items: start; }
+    .step-no { font-family: var(--font-display); font-size: 3.5rem; color: var(--green); line-height: 1; }
+    .step-who { font-family: var(--font-mono); font-size: 0.6rem; letter-spacing: 0.28em; text-transform: uppercase; color: var(--muted); margin-bottom: 0.5rem; }
+    .step h3 { font-weight: 700; font-size: 1.35rem; color: var(--white); margin-bottom: 0.5rem; }
+    .step p { font-size: 0.9rem; color: var(--muted); line-height: 1.8; max-width: 580px; }
+
+    /* 05 FEATURES & WHO */
+    #features, #who { background: var(--bg); padding: 8rem 0; }
+    .feat-top { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 4.5rem; }
+    .feat-h, .who-h { font-family: var(--font-display); font-size: clamp(2.5rem, 5.5vw, 6.5rem); color: var(--white); line-height: 0.9; letter-spacing: 0.03em; }
+    .feat-h span, .who-h span { color: var(--green); }
+    .feat-grid, .who-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 1.2rem; }
+    .who-grid { grid-template-columns: repeat(3,1fr); }
+    .fcard, .wcard { border: 1px solid var(--border); background: var(--surface); padding: 2rem 1.8rem; position: relative; overflow: hidden; transition: border-color 0.3s, transform 0.3s; }
+    .fcard:hover, .wcard:hover { border-color: rgba(176, 224, 230, 0.3); transform: translateY(-4px); }
+    .fcard h3, .wcard h3 { font-weight: 700; font-size: 1.15rem; color: var(--white); margin-bottom: 0.6rem; }
+    .fcard p, .wcard p { font-size: 0.84rem; color: var(--muted); line-height: 1.8; }
+    .wcard-role { font-family: var(--font-mono); font-size: 0.6rem; letter-spacing: 0.3em; text-transform: uppercase; color: var(--green); margin-bottom: 0.5rem; }
+
+    /* 06 IMPACT */
+    #impact { background: var(--surface); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); padding: 8rem 0; position: relative; overflow: hidden; }
+    .impact-glow { position: absolute; width: 700px; height: 700px; background: radial-gradient(circle, rgba(176, 224, 230, 0.07), transparent 70%); left: 50%; top: 50%; transform: translate(-50%,-50%); pointer-events: none; }
+    .impact-h { font-family: var(--font-display); font-size: clamp(2.5rem, 6vw, 7rem); color: var(--white); text-align: center; letter-spacing: 0.04em; margin-bottom: 5rem; position: relative; }
+    .impact-h .itag { display: block; font-family: var(--font-mono); font-size: 0.62rem; letter-spacing: 0.35em; color: var(--green); margin-bottom: 0.8rem; }
+    .counters { display: grid; grid-template-columns: repeat(4,1fr); gap: 1px; background: var(--border); border: 1px solid var(--border); }
+    .ctr { background: var(--surface); padding: 3.5rem 2rem; text-align: center; position: relative; }
+    .ctr::before { content: attr(data-label); position: absolute; top: 1.3rem; left: 50%; transform: translateX(-50%); font-family: var(--font-mono); font-size: 0.58rem; letter-spacing: 0.3em; color: var(--muted); text-transform: uppercase; white-space: nowrap; }
+    .ctr-num { font-family: var(--font-display); font-size: clamp(3.5rem, 7vw, 7rem); color: var(--white); line-height: 1; }
+    .ctr-num .suf { color: var(--green); }
+    .ctr-desc { font-size: 0.8rem; color: var(--muted); line-height: 1.65; margin-top: 0.8rem; }
+
+    /* 07 QUOTE */
+    #quote { background: var(--bg); padding: 6rem 0; border-top: 1px solid var(--border); text-align: center; }
+    .quote-sym { font-family: var(--font-display); font-size: 9rem; color: var(--green); opacity: 0.12; line-height: 0.4; display: block; margin-bottom: 2.5rem; }
+    .close-quote { font-family: var(--font-display); font-size: clamp(2rem, 5vw, 5.5rem); line-height: 1.06; letter-spacing: 0.02em; color: var(--white); max-width: 920px; margin: 0 auto; }
+    .close-quote .hl { color: var(--green); }
+    .close-attr { font-family: var(--font-mono); font-size: 0.62rem; letter-spacing: 0.3em; color: var(--muted); text-transform: uppercase; margin-top: 2.5rem; }
+
+    /* 08 LIVE DASHBOARD (NEW) */
+    #dashboard { background: var(--bg2); padding: 8rem 0; border-top: 1px solid var(--border); }
+    .dash-layout { display: grid; grid-template-columns: 1.2fr 1fr; gap: 4rem; margin-top: 2rem; }
+    
+    /* Left Panel: Live Listings */
+    .dash-left { background: var(--bg); border: 1px solid var(--border); padding: 2.5rem; height: 600px; overflow-y: auto; position: relative; }
+    .dash-left::-webkit-scrollbar { width: 6px; }
+    .dash-left::-webkit-scrollbar-track { background: var(--bg); }
+    .dash-left::-webkit-scrollbar-thumb { background: var(--border); }
+    .dash-left::-webkit-scrollbar-thumb:hover { background: var(--green-dim); }
+    
+    .dash-h3 { font-family: var(--font-display); font-size: 2.2rem; color: var(--white); margin-bottom: 2rem; letter-spacing: 0.05em; }
+    
+    /* Listing Cards */
+    .l-card { background: var(--surface); border: 1px solid var(--border); padding: 1.8rem; margin-bottom: 1.2rem; display: flex; justify-content: space-between; align-items: center; transition: transform 0.2s, border-color 0.2s; }
+    .l-card:hover { border-color: var(--green); transform: translateX(5px); }
+    .l-info h4 { color: var(--white); font-size: 1.3rem; margin-bottom: 0.6rem; font-weight: 700; }
+    .l-info p { color: var(--muted); font-size: 0.85rem; margin-bottom: 0.3rem; }
+    .l-btn { background: transparent; border: 1px solid var(--green); color: var(--green); padding: 0.6rem 1.2rem; cursor: none; font-family: var(--font-mono); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.1em; transition: 0.3s; text-decoration: none; display: inline-block; white-space: nowrap;}
+    .l-btn:hover { background: var(--green-subtle); box-shadow: 0 0 15px rgba(176,224,230,0.2); }
+    
+    .empty-state { text-align: center; color: var(--muted); margin-top: 5rem; font-style: italic; }
+
+    /* Right Panel: Form */
+    .dash-right { background: var(--surface); border: 1px solid var(--border); padding: 2.5rem; }
+    .form-group { margin-bottom: 1.5rem; }
+    .form-group label { display: block; font-family: var(--font-mono); font-size: 0.65rem; color: var(--green); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.6rem; }
+    .form-group input { width: 100%; background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 1.2rem; font-family: var(--font-body); font-size: 0.95rem; transition: border-color 0.3s; outline: none; border-radius: 4px; }
+    .form-group input:focus { border-color: var(--green); }
+    
+    .submit-btn { width: 100%; background: var(--green); color: var(--bg); border: none; padding: 1.2rem; font-family: var(--font-mono); font-size: 0.85rem; font-weight: bold; text-transform: uppercase; letter-spacing: 0.15em; cursor: none; transition: 0.3s; margin-top: 1rem; border-radius: 4px; }
+    .submit-btn:hover { box-shadow: 0 0 25px rgba(176,224,230,0.3); transform: translateY(-2px); }
+    .clear-btn { background: transparent; border: none; color: var(--muted); width: 100%; margin-top: 1rem; font-size: 0.8rem; cursor: pointer; text-decoration: underline; font-family: var(--font-body); }
+
+    /* FOOTER */
+    footer { border-top: 1px solid var(--border); padding: 2.5rem 4rem; display: flex; align-items: center; justify-content: space-between; }
+    .f-logo { font-family: var(--font-display); font-size: 1.3rem; letter-spacing: 0.2em; color: var(--white); }
+    .f-logo .dot { color: var(--green); }
+    .f-center { font-family: var(--font-mono); font-size: 0.6rem; letter-spacing: 0.2em; color: var(--muted); text-align: center; line-height: 1.8; }
+    .f-sdg { font-family: var(--font-mono); font-size: 0.6rem; letter-spacing: 0.18em; color: var(--green); text-align: right; line-height: 1.8; }
+
+    /* RESPONSIVE */
+    @media(max-width:1100px){
+      .container{padding:0 2rem}
+      nav{padding:1.2rem 2rem}
+      .nav-links{display:none}
+      .problem-layout, .how-top, .dash-layout {grid-template-columns:1fr; gap:4rem;}
+      .story-grid, .who-grid {grid-template-columns:1fr}
+      .feat-grid, .counters {grid-template-columns:repeat(2,1fr)}
+      .hero-stats{display:none}
+      footer{flex-direction:column;gap:1.2rem;text-align:center}
+      .l-card { flex-direction: column; align-items: flex-start; gap: 1rem; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="cursor" id="cursor"></div>
+<div class="cursor-ring" id="cring"></div>
+
+<!-- LOADER -->
+<div id="loader">
+  <div class="loader-top">Made for India 🇮🇳</div>
+  <div class="loader-word">
+    <span>S</span><span>U</span><span>R</span><span>P</span><span>L</span><span>U</span><span>S</span>
+  </div>
+  <div class="loader-hindi">हर दाने का हिसाब — Every Grain Matters</div>
+  <div class="loader-bar"></div>
+</div>
+
+<!-- NAV -->
+<nav id="nav">
+  <a href="#hero" class="nav-logo">SURPL<span class="dot">U</span>S 🇮🇳</a>
+  <ul class="nav-links">
+    <li><a href="#problem">Problem</a></li>
+    <li><a href="#how">How It Works</a></li>
+    <li><a href="#impact">Impact</a></li>
+    <li><a href="#dashboard">Live App</a></li>
+  </ul>
+  <a href="#dashboard" class="nav-btn">Open App</a>
+</nav>
+
+<!-- 01 HERO -->
+<section id="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-grid"></div>
+  <div class="container hero-inner">
+    <div class="hero-flag-line">
+      <span>🇮🇳</span>
+      <span>A platform built for every Indian — farmer, NGO, or anyone in between</span>
+    </div>
+    <h1 class="hero-title">
+      <span class="line"><span>Hunger</span></span>
+      <span class="line"><span>exists. So does</span></span>
+      <span class="line"><span>surplus.</span></span>
+    </h1>
+    <p class="hero-sub">
+      India wastes <strong>67 million tonnes of food every year.</strong><br>
+      At the same time, <strong>19 crore Indians go to bed hungry.</strong><br>
+      The food is there. It just doesn't reach the right people.<br>
+      <strong>SURPLUS connects the two — simply and freely.</strong>
+    </p>
+  </div>
+
+  <div class="hero-stats">
+    <div class="hstat">
+      <div class="hstat-num">40%</div>
+      <div>
+        <span class="hstat-label">Of all food produced</span>
+        <span class="hstat-note">…is wasted in India</span>
+      </div>
+    </div>
+    <div class="hstat">
+      <div class="hstat-num">19Cr</div>
+      <div>
+        <span class="hstat-label">Indians go hungry</span>
+        <span class="hstat-note">…every single day</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 02 PROBLEM -->
+<section id="problem">
+  <div class="container">
+    <div class="problem-layout">
+      <div>
+        <p class="tag reveal">02 — The Problem</p>
+        <div class="giant-stat reveal d1">
+          <div class="gs-accent">67M</div>
+          <div class="gs-ghost">TONNES</div>
+          <div class="gs-solid">WASTED</div>
+        </div>
+        <p class="stat-note reveal d2">
+          Every year, India throws away food worth <strong>₹92,000 crore.</strong> We don't have a food shortage. We have a food <em>sharing</em> problem.
+        </p>
+      </div>
+      <div class="problem-cards">
+        <div class="pcard reveal d1">
+          <div class="pcard-id">PROBLEM 01</div>
+          <h3>🌾 Farmers throw away crops</h3>
+          <p>When prices crash, farmers are forced to leave crops on the field to rot because transport costs more than the crop's worth.</p>
+        </div>
+        <div class="pcard reveal d2">
+          <div class="pcard-id">PROBLEM 02</div>
+          <h3>🏙️ Urban waste</h3>
+          <p>Weddings and hotels prepare more food than eaten. Every day, good food goes into the bin while hungry families live streets away.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 03 STORIES -->
+<section id="story">
+  <div class="container">
+    <p class="tag reveal">03 — Real People</p>
+    <h2 class="story-head reveal d1">
+      Three people.<br>
+      <span class="sf">One broken system.</span><br>
+      <span class="hl">One solution.</span>
+    </h2>
+    <div class="story-grid">
+      <div class="scard reveal d1">
+        <div class="scard-who">The Farmer</div>
+        <h3>Ramesh grew 3 tonnes of cauliflower. No one bought it.</h3>
+        <p>He ploughed it back into the soil — a ₹40,000 loss. Ten km away, a shelter needed vegetables for 200 children.</p>
+      </div>
+      <div class="scard reveal d2">
+        <div class="scard-who">The NGO Worker</div>
+        <h3>Sunita runs a shelter for 150 women.</h3>
+        <p>She makes 10 calls every morning looking for donations. There is no system — just prayer and phone calls.</p>
+      </div>
+      <div class="scard reveal d3">
+        <div class="scard-who">The Restaurant Owner</div>
+        <h3>Ahmed has 50 kg of good food left.</h3>
+        <p>He wants to donate it, but doesn't know who to call. By morning, it's thrown away. He wishes there was a simple button.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 04 HOW IT WORKS -->
+<section id="how">
+  <div class="container">
+    <div class="how-top">
+      <div>
+        <p class="tag reveal">04 — How It Works</p>
+        <div class="how-big reveal d1">MEET<br><span class="sub-word">SURPLUS.</span></div>
+      </div>
+      <div class="reveal d2">
+        <p class="how-lede">
+          SURPLUS is a <strong>free platform</strong> acting as a matchmaker. It's as simple as filling a form. <strong>No app required. No fees.</strong>
+        </p>
+      </div>
+    </div>
+
+    <div class="steps">
+      <div class="step reveal d1">
+        <div class="step-no">01</div>
+        <div>
+          <div class="step-who">You</div>
+          <h3>List your extra food</h3>
+          <p>Enter what you have and where it is. Takes 30 seconds.</p>
+        </div>
+      </div>
+      <div class="step reveal d2">
+        <div class="step-no">02</div>
+        <div>
+          <div class="step-who">Platform</div>
+          <h3>Auto-Match</h3>
+          <p>The system instantly displays it on the live board for local NGOs.</p>
+        </div>
+      </div>
+      <div class="step reveal d3">
+        <div class="step-no">03</div>
+        <div>
+          <div class="step-who">NGO</div>
+          <h3>Claim & Pickup</h3>
+          <p>An NGO clicks your WhatsApp link and arranges the pickup immediately.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 05 IMPACT -->
+<section id="impact">
+  <div class="impact-glow"></div>
+  <div class="container">
+    <h2 class="impact-h reveal">
+      <span class="itag">05 — The Vision</span>
+      THE CHANGE WE CAN MAKE
+    </h2>
+    <div class="counters">
+      <div class="ctr" data-label="Meals Served">
+        <div class="ctr-num"><span class="v" data-target="240000">0</span><span class="suf">+</span></div>
+      </div>
+      <div class="ctr" data-label="Tonnes Saved">
+        <div class="ctr-num"><span class="v" data-target="850">0</span><span class="suf">T</span></div>
+      </div>
+      <div class="ctr" data-label="Farmers Supported">
+        <div class="ctr-num"><span class="v" data-target="3200">0</span><span class="suf">+</span></div>
+      </div>
+      <div class="ctr" data-label="NGOs Connected">
+        <div class="ctr-num"><span class="v" data-target="500">0</span><span class="suf">+</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 07 QUOTE -->
+<section id="quote">
+  <div class="container">
+    <span class="quote-sym reveal">"</span>
+    <blockquote class="close-quote reveal d1">
+      Zero Hunger is not about growing more food.<br>
+      It's about making sure <span class="hl">no food goes to waste.</span>
+    </blockquote>
+    <p class="close-attr reveal d2">— The SURPLUS Mission</p>
+  </div>
+</section>
+
+<!-- 08 LIVE DASHBOARD -->
+<section id="dashboard">
+  <div class="container">
+    <p class="tag reveal">08 — The Live Platform</p>
+    <h2 class="story-head reveal d1" style="margin-bottom: 2rem;">
+      Make an <span class="hl">Impact</span> Now.
+    </h2>
+    <p class="reveal d2" style="color: var(--muted); max-width: 600px; margin-bottom: 3rem; line-height: 1.6;">
+      This is the live SURPLUS engine. List surplus food using the form on the right, and it instantly becomes available to verified NGOs on the public board.
+    </p>
+
+    <div class="dash-layout reveal d3">
+      
+      <!-- LEFT: LIVE LISTINGS -->
+      <div class="dash-left">
+        <h3 class="dash-h3">Live Food Board</h3>
+        <div id="listings-container">
+          <!-- JS Injects cards here -->
+        </div>
+      </div>
+
+      <!-- RIGHT: ADD LISTING FORM -->
+      <div class="dash-right">
+        <h3 class="dash-h3">List Surplus Food</h3>
+        <form id="food-form">
+          <div class="form-group">
+            <label>What type of food?</label>
+            <input type="text" id="foodType" placeholder="e.g., 200 Rotis & Dal, or Cauliflower" required>
+          </div>
+          <div class="form-group">
+            <label>Quantity (Kg or Meals)</label>
+            <input type="text" id="quantity" placeholder="e.g., 50 kg" required>
+          </div>
+          <div class="form-group">
+            <label>Pickup Location</label>
+            <input type="text" id="location" placeholder="e.g., Rajarampuri, Kolhapur" required>
+          </div>
+          <div class="form-group">
+            <label>Contact Number (WhatsApp)</label>
+            <input type="tel" id="contact" placeholder="9876543210" required>
+          </div>
+          <button type="submit" class="submit-btn">Publish to Live Board</button>
+          <button type="button" id="clear-btn" class="clear-btn">Clear Board (Test Mode)</button>
+        </form>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="f-logo">SURPL<span class="dot">U</span>S 🇮🇳</div>
+  <div class="f-center">
+    © 2026 Surplus Platform India &nbsp;·&nbsp; हर दाने का हिसाब<br>
+    A free platform connecting farmers &amp; NGOs across Bharat
+  </div>
+  <div class="f-sdg">
+    UN SDG Goal #2 — Zero Hunger<br>
+    Jai Kisan. Jai Bharat. 🙏
+  </div>
+</footer>
+
+<script>
+  /* ----------------------
+     UI ANIMATIONS & EFFECTS
+     ---------------------- */
+  window.addEventListener('load', () => {
+    setTimeout(() => document.getElementById('loader').classList.add('hidden'), 2500);
+  });
+
+  const cur = document.getElementById('cursor');
+  const crng = document.getElementById('cring');
+  let mx=0,my=0,rx=0,ry=0;
+  document.addEventListener('mousemove', e => {
+    mx=e.clientX; my=e.clientY;
+    cur.style.left=mx+'px'; cur.style.top=my+'px';
+  });
+  (function loop(){
+    rx+=(mx-rx)*0.12; ry+=(my-ry)*0.12;
+    crng.style.left=rx+'px'; crng.style.top=ry+'px';
+    requestAnimationFrame(loop);
+  })();
+
+  const navEl = document.getElementById('nav');
+  window.addEventListener('scroll', () => navEl.classList.toggle('scrolled', scrollY > 60));
+
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => { if(e.isIntersecting) e.target.classList.add('visible'); });
+  }, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
+  document.querySelectorAll('.reveal, .tag').forEach(el => obs.observe(el));
+
+  function ease(t){ return 1 - Math.pow(1-t, 4); }
+  function animCount(el, target, dur=2200){
+    const start = performance.now();
+    (function step(now){
+      const p = Math.min((now - start) / dur, 1);
+      el.textContent = Math.floor(ease(p) * target).toLocaleString('en-IN');
+      if(p < 1) requestAnimationFrame(step);
+      else el.textContent = target.toLocaleString('en-IN');
+    })(start);
+  }
+  const cObs = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if(e.isIntersecting){
+        animCount(e.target, parseInt(e.target.dataset.target));
+        cObs.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.5 });
+  document.querySelectorAll('.v[data-target]').forEach(el => cObs.observe(el));
+
+  document.querySelectorAll('a[href^="#"]').forEach(a => {
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      const t = document.querySelector(a.getAttribute('href'));
+      if(t) t.scrollIntoView({ behavior: 'smooth' });
+    });
+  });
+
+  const grid = document.querySelector('.hero-grid');
+  window.addEventListener('scroll', () => {
+    if(grid) grid.style.transform = `translateY(${scrollY * 0.28}px)`;
+  });
+
+  /* ----------------------
+     DASHBOARD LOGIC
+     ---------------------- */
+  let surplusData = JSON.parse(localStorage.getItem('surplus_db')) || [];
+  const form = document.getElementById('food-form');
+  const container = document.getElementById('listings-container');
+  const clearBtn = document.getElementById('clear-btn');
+
+  function renderListings() {
+    container.innerHTML = ''; 
+
+    if (surplusData.length === 0) {
+      container.innerHTML = '<div class="empty-state">No food listed right now. Use the form to add a live listing!</div>';
+      return;
+    }
+
+    surplusData.forEach(item => {
+      const card = document.createElement('div');
+      card.className = 'l-card';
+      
+      card.innerHTML = `
+        <div class="l-info">
+          <h4>${item.quantity} of ${item.foodType}</h4>
+          <p>📍 <strong>Location:</strong> ${item.location}</p>
+          <p>🕒 <strong>Listed:</strong> ${item.time}</p>
+        </div>
+        <div>
+          <a href="https://wa.me/${item.contact.replace(/\D/g,'')}" target="_blank" class="l-btn">Chat on WhatsApp</a>
+        </div>
+      `;
+      container.appendChild(card);
+    });
+  }
+
+  form.addEventListener('submit', function(event) {
+    event.preventDefault(); 
+    const newListing = {
+      foodType: document.getElementById('foodType').value,
+      quantity: document.getElementById('quantity').value,
+      location: document.getElementById('location').value,
+      contact: document.getElementById('contact').value,
+      time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
+    };
+
+    surplusData.unshift(newListing); 
+    localStorage.setItem('surplus_db', JSON.stringify(surplusData));
+    form.reset();
+    renderListings();
+  });
+
+  clearBtn.addEventListener('click', function() {
+    localStorage.removeItem('surplus_db');
+    surplusData = [];
+    renderListings();
+  });
+
+  // Initialize board on load
+  renderListings();
+</script>
+</body>
+</html>
